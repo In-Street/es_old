@@ -1,0 +1,98 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:p="http://www.springframework.org/schema/p"
+	   xmlns:mvc="http://www.springframework.org/schema/mvc"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xmlns:task="http://www.springframework.org/schema/task"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context.xsd
+      http://www.springframework.org/schema/mvc
+      http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+      http://www.springframework.org/schema/tx
+      http://www.springframework.org/schema/tx/spring-tx-4.1.xsd
+      http://www.springframework.org/schema/task
+      http://www.springframework.org/schema/task/spring-task-3.1.xsd  ">
+	<mvc:annotation-driven/>
+	<mvc:default-servlet-handler/>
+
+
+	<context:component-scan base-package="cyf.es.**.controller,cyf.es.**.service"/>
+
+	<bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<property name="maxUploadSize" value="10000000000000"/>
+	</bean>
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="cyf.es.**.dao"/>
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+	</bean>
+
+	<bean id = "internalResourceViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver" p:prefix="/WEB-INF/jsp/"
+		  p:suffix=".jsp"/>
+
+	<context:property-placeholder location="classpath*:jdbc.properties" ignore-unresolvable="true"/>
+
+	<bean id="dataSource" destroy-method="close"
+		  class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${mysql.jdbc.driverClassName}"/>
+		<property name="url" value="${mysql.jdbc.url}"/>
+		<property name="username" value="${mysql.jdbc.username}"/>
+		<property name="password" value="${mysql.jdbc.password}"/>
+		<property name="maxActive" value="${mysql.jdbc.maxActive}"/>
+		<property name="maxIdle" value="${mysql.jdbc.maxIdle}"/>
+		<property name="maxWait" value="${mysql.jdbc.maxWait}"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="validationQuery" value="SELECT 1"/>
+		<property name="minEvictableIdleTimeMillis" value="3600000"/>
+		<property name="timeBetweenEvictionRunsMillis" value="600000"/>
+		<property name="numTestsPerEvictionRun" value="${mysql.jdbc.maxActive}"/>
+	</bean>
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="configLocation" value="classpath:mybatis-config.xml"></property>
+	</bean>
+	<bean id="ydManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	<!-- enable transaction annotation support -->
+	<tx:annotation-driven transaction-manager="ydManager"/>
+	<bean id="threadPoolTaskExecutor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="5000"/>
+		<property name="maxPoolSize" value="10000"/>
+		<property name="keepAliveSeconds" value="300"/>
+		<property name="rejectedExecutionHandler">
+			<bean class="java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy"/>
+		</property>
+	</bean>
+
+	<bean id="threadPoolTaskExecutorProductor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="50"/>
+		<property name="maxPoolSize" value="1000"/>
+		<property name="keepAliveSeconds" value="300"/>
+		<property name="rejectedExecutionHandler">
+			<bean class="java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy"/>
+		</property>
+		<property name="threadGroup" value="TmWebCrawlertx"></property>
+	</bean>
+
+	<task:annotation-driven/>
+	<context:annotation-config/>
+	<bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
+	<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<property name="messageConverters">
+			<list>
+				<ref bean="jsonHttpMessageConverter" />
+			</list>
+		</property>
+	</bean>
+	<bean id="jsonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>application/json;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+</beans>
