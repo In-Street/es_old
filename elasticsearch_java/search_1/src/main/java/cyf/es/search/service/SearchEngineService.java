@@ -5,29 +5,44 @@ import cyf.es.util.ESHelper;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.processors.JsonValueProcessor;
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkIndexByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
 
 
 @Service
@@ -44,6 +59,7 @@ public class SearchEngineService {
     @PostConstruct
     void initLocalResource() {
         Settings settings = Settings.builder()
+                // .put("cluster.name", "trademark_1")
                 .put("client.transport.sniff", true).build();
         try {
             transportClient = new PreBuiltTransportClient(settings)
@@ -57,6 +73,12 @@ public class SearchEngineService {
         return transportClient;
     }
 
+
+    /**
+     * 导入数据
+     *
+     * @return
+     */
     public boolean allTmApplicantNameIntoEngine() {
         int batchSize = 5000;
         TMInfo tmInfo = new TMInfo();
@@ -97,6 +119,64 @@ public class SearchEngineService {
         return true;
     }
 
+    public BoolQueryBuilder getTMinfoBuilder(TMInfo tmInfo) {
+        BoolQueryBuilder builder = null;
+        if (StringUtils.isNotEmpty(tmInfo.getTmRegNbr())) {
+            builder = QueryBuilders.boolQuery();
+            List<QueryBuilder> must = builder.must();
+            if (tmInfo.getTmClass() != null && tmInfo.getTmClass() > 0) {
+                must.add(QueryBuilders.termQuery("tmClass", tmInfo.getTmClass()).boost(10));
+            }
+            must.add(QueryBuilders.termQuery("tmRegNbr", tmInfo.getTmRegNbr()).boost(10));
+            LOGGER.debug(builder.toString());
+        }
+        return builder;
+
+    }
+
+    public List<TMInfo> query(String keyword) throws IOException {
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        //queryBuilder.must(QueryBuilders.termQuery("tmCn", keyword));
+
+      /*  List<QueryBuilder> mustQueryList = queryBuilder.must();
+        mustQueryList.add(QueryBuilders.prefixQuery("tmCn", keyword));*/
+
+        List<QueryBuilder> shouldQueryList = queryBuilder.should();
+        shouldQueryList.add(QueryBuilders.wildcardQuery("tmCn", "*"+keyword+"*"));
+
+        String nodeName = transportClient.nodeName();
+        LOGGER.debug("节点名[{}]", nodeName);
+        SearchRequestBuilder searchRequestBuilder = transportClient.prepareSearch(ESHelper.getTheNameOfIndexForTmdetail())
+                .setTypes(ESHelper.getTheTypeForTmdetail())
+                .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+                .setQuery(queryBuilder)
+                .addSort("tmClass", SortOrder.ASC)
+                .addSort("_score", SortOrder.DESC);
+        // .setFrom(tmInfo.getRowStart()).setSize(tmInfo.getPageCnt());
+        SearchResponse searchResponse = searchRequestBuilder.get();
+        SearchHits searchHits = searchResponse.getHits();
+        LOGGER.debug("DSL:[{}]",searchRequestBuilder.toString());
+        long total = searchHits.totalHits();
+        LOGGER.debug("总数量：[{}]",total);
+        List<TMInfo> tmInfos = new ArrayList<>();
+        for (SearchHit searchHit : searchHits) {
+            System.out.println(searchHit.getSource());
+            TMInfo tmInfo = Jackson2ObjectMapperBuilder.json().build().readValue(searchHit.getSourceAsString(), TMInfo.class);
+            tmInfos.add(tmInfo);
+        }
+        return tmInfos;
+    }
+
+
+    public boolean delByTMId(TransportClient client, BoolQueryBuilder boolQueryBuilder, String str) {
+        BulkIndexByScrollResponse response =
+                DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
+                        .filter(boolQueryBuilder)
+                        .source(ESHelper.getTheNameOfIndexForTmdetail())
+                        .get();
+        return response.getDeleted() > 0 ? true : false;
+    }
+
 
     public boolean singleTMIntoEngine(Object object) {
         BulkRequestBuilder bulkRequest = transportClient.prepareBulk();
@@ -116,6 +196,38 @@ public class SearchEngineService {
         }
         return true;
     }
+
+
+    /**
+     * 测试
+     *
+     * @return
+     */
+
+    public void del() {
+        try {
+            DeleteResponse deleteResponse = transportClient.prepareDelete(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail(), "AVwux7iiKEZAdc1qUqEP").get();
+            System.out.println();
+        } catch (Exception e) {
+            LOGGER.error("删除失败", e);
+        }
+
+    }
+
+    /**
+     * 局部更新字段
+     *
+     * @throws IOException
+     */
+    public void update() throws IOException {
+        XContentBuilder builder = XContentFactory.jsonBuilder()
+                .startObject()
+                .field("pageCnt", 30)
+                .endObject();
+        UpdateResponse response = transportClient.prepareUpdate(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail(), "AVwux1rUKEZAdc1qUgAR").setDoc(builder).get();
+        System.out.println(response.getVersion());
+    }
+
 
     private JsonConfig getJsonConfig() {
         JsonConfig jsonConfig = new JsonConfig();
@@ -146,7 +258,7 @@ public class SearchEngineService {
                     if (value == null || StringUtils.trimToEmpty((String) value).length() == 0)
                         return "1970-01-01";
                     try {
-                        return DateFormatUtils.format(DateUtils.parseDate(StringUtils.trimToEmpty((String) value), new String[]{"yyyy-M-d", "yyyyMM-dd", "yyyyMMdd", "yyyy-MMdd", "yyyy-MM-dd","MM d yyyy"}), format);
+                        return DateFormatUtils.format(DateUtils.parseDate(StringUtils.trimToEmpty((String) value), new String[]{"yyyy-M-d", "yyyyMM-dd", "yyyyMMdd", "yyyy-MMdd", "yyyy-MM-dd", "MM d yyyy"}), format);
                     } catch (ParseException e) {
                         LOGGER.error(e.getLocalizedMessage());
                         return "1970-01-01";

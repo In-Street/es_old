@@ -120,7 +120,28 @@
             <version>1.2.17</version>
         </dependency>
 
-
+        <!-- 日志配置 begin-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.7.21</version>
+        </dependency>
+        <!-- 日志配置 end-->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.7</version>
+        </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -141,21 +162,7 @@
             <version>1.3.2</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-            <version>1.7.21</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.7.21</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.21</version>
-        </dependency>
+
 
 
         <dependency>
@@ -257,6 +264,8 @@
                 <db-maxActive>255</db-maxActive>
                 <db-maxIdle>20</db-maxIdle>
                 <db-maxWait>100</db-maxWait>
+                <!-- log配置 begin -->
+                <!-- Log4j properties -->
                 <log4j.rootLogger>DEBUG, stdout, logfile</log4j.rootLogger>
 
                 <log4j.appender.stdout>org.apache.log4j.ConsoleAppender</log4j.appender.stdout>
@@ -280,7 +289,7 @@
                 <log4j.logger.java.sql.ResultSet>DEBUG</log4j.logger.java.sql.ResultSet>
                 <log4j.logger.org.apache.ibatis>DEBUG</log4j.logger.org.apache.ibatis>
 
-                <log4j.logger.org.springframework.web.servlet.DispatcherServlet>WARN, stdout</log4j.logger.org.springframework.web.servlet.DispatcherServlet>
+                <log4j.logger.org.springframework.web.servlet.DispatcherServlet>DEBUG, stdout</log4j.logger.org.springframework.web.servlet.DispatcherServlet>
 
                 <!--Console -->
                 <log4j.appender.Console>org.apache.log4j.ConsoleAppender</log4j.appender.Console>
@@ -292,7 +301,8 @@
 
 
                 <sys.elasticsearch.ip>127.0.0.1</sys.elasticsearch.ip>
-                <sys.elasticsearch.port>9030</sys.elasticsearch.port>
+                <!--节点与节点之间通信使用的端口-->
+                <sys.elasticsearch.port>9300</sys.elasticsearch.port>
                 <sys.elasticsearch.index.name.cyf>cyf</sys.elasticsearch.index.name.cyf>
                 <sys.elasticsearch.index.type.search_1>search_1</sys.elasticsearch.index.type.search_1>
                 <sys.elasticsearch.index.type.field.tmCn>tmCn</sys.elasticsearch.index.type.field.tmCn>

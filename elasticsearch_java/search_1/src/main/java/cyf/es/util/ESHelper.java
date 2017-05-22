@@ -13,11 +13,11 @@ public class ESHelper {
     }
 
     public static String getTheNameOfIndexForTmdetail(){
-        return PropertiesUtil.getPropertyValueByKeyAndLocation(SysConstans.SYS_CONFIG_PROPERTIES_LOCATION,"sys.elasticsearch.index.name.tmdetail");
+        return PropertiesUtil.getPropertyValueByKeyAndLocation(SysConstans.SYS_CONFIG_PROPERTIES_LOCATION,"sys.elasticsearch.index.name.cyf");
     }
 
     public static String getTheTypeForTmdetail(){
-        return PropertiesUtil.getPropertyValueByKeyAndLocation(SysConstans.SYS_CONFIG_PROPERTIES_LOCATION,"sys.elasticsearch.index.type.tmdetail");
+        return PropertiesUtil.getPropertyValueByKeyAndLocation(SysConstans.SYS_CONFIG_PROPERTIES_LOCATION,"sys.elasticsearch.index.type.search_1");
     }
 
     public static String getTheTmCnFieldNameForTmdetail(){
