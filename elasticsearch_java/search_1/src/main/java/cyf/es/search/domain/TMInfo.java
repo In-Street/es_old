@@ -7,15 +7,31 @@ public class TMInfo {
     private Integer tmClass;
 
     private String tmCn;
+
+    private String tmEn;
+
     private String tmApplicant;
+
     private Integer id;
+
     private String tmdetail;
+
     private String tmRegNbr;
+
     private Integer pageCnt;
 
     private Integer rowStart; // 起始行
 
     private Integer totalCnt; // 总记录数
+
+
+    public String getTmEn() {
+        return tmEn;
+    }
+
+    public void setTmEn(String tmEn) {
+        this.tmEn = tmEn;
+    }
 
     public Integer getTmClass() {
         return tmClass;

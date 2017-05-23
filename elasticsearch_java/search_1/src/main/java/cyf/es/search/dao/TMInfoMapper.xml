@@ -12,6 +12,7 @@
     <result column="t_tm_detail_tm_applicant" property="tmApplicant" jdbcType="VARCHAR" />
     <result column="t_tm_detail_tm_class" property="tmClass" jdbcType="INTEGER" />
     <result column="t_tm_detail_tmdetail" property="tmdetail" jdbcType="LONGVARCHAR" />
+    <result column="t_tm_detail_tm_en" property="tmEn" jdbcType="VARCHAR" />
   </resultMap>
   <sql id="Base_Column_List" >
     <!--
@@ -23,7 +24,8 @@
    t_tm_detail.tm_cn as t_tm_detail_tm_cn,
     t_tm_detail.tm_applicant as t_tm_detail_tm_applicant,
     t_tm_detail.tm_class as t_tm_detail_tm_class,
-    t_tm_detail.tmdetail as t_tm_detail_tmdetail
+    t_tm_detail.tmdetail as t_tm_detail_tmdetail,
+    t_tm_detail.tm_en as t_tm_detail_tm_en
   </sql>
 
   <select id="selectMaxId" resultType="java.lang.Integer">

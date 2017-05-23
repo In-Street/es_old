@@ -303,7 +303,7 @@
                 <sys.elasticsearch.ip>127.0.0.1</sys.elasticsearch.ip>
                 <!--节点与节点之间通信使用的端口-->
                 <sys.elasticsearch.port>9300</sys.elasticsearch.port>
-                <sys.elasticsearch.index.name.cyf>cyf</sys.elasticsearch.index.name.cyf>
+                <sys.elasticsearch.index.name.cyf>cyf_1</sys.elasticsearch.index.name.cyf>
                 <sys.elasticsearch.index.type.search_1>search_1</sys.elasticsearch.index.type.search_1>
                 <sys.elasticsearch.index.type.field.tmCn>tmCn</sys.elasticsearch.index.type.field.tmCn>
 

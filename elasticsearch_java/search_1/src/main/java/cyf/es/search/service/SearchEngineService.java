@@ -168,9 +168,9 @@ public class SearchEngineService {
     }
 
 
-    public boolean delByTMId(TransportClient client, BoolQueryBuilder boolQueryBuilder, String str) {
+    public boolean delByTMId( BoolQueryBuilder boolQueryBuilder) {
         BulkIndexByScrollResponse response =
-                DeleteByQueryAction.INSTANCE.newRequestBuilder(client)
+                DeleteByQueryAction.INSTANCE.newRequestBuilder(transportClient)
                         .filter(boolQueryBuilder)
                         .source(ESHelper.getTheNameOfIndexForTmdetail())
                         .get();
