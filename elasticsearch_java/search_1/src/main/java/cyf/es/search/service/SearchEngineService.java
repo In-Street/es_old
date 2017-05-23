@@ -112,9 +112,9 @@ public class SearchEngineService {
             }
             BulkResponse bulkResponse = bulkRequest.get();
             if (bulkResponse.hasFailures()) {
-                LOGGER.error("申请人名称全量更新处理出现错误，执行下一批次：ID[{}]", i);
+                LOGGER.error("全量更新处理出现错误，执行下一批次：ID[{}]", i);
             }
-            LOGGER.info("申请人名称全量更新处理结束：ID[{}]", i);
+            LOGGER.info("全量更新处理结束：ID[{}]", i);
         }
         return true;
     }
