@@ -38,8 +38,11 @@ public class SearchController {
      */
     @RequestMapping("/dataUpdate")
     @ResponseBody
-    public String dataUpdate() {
-        boolean result = searchEngineService.allTmApplicantNameIntoEngine();
+    public String dataUpdate() throws InterruptedException {
+//        boolean result = searchEngineService.allTmApplicantNameIntoEngine();
+//        boolean result = searchEngineService.IntoEngineByThreadPool_2();
+        boolean result = searchEngineService.IntoEngineByThreadPool();
+       // boolean result = searchEngineService.getBulkRequest();
         return "";
     }
 
@@ -69,7 +72,7 @@ public class SearchController {
     public String delByTMId(String keyword) throws IOException {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         List<QueryBuilder> list = boolQueryBuilder.should();
-        list.add(QueryBuilders.wildcardQuery("tmCn", "*"));
+        list.add(QueryBuilders.wildcardQuery("tmRegNbr", "*"));
         searchEngineService.delByTMId(boolQueryBuilder);
         return "";
     }

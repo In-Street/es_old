@@ -39,10 +39,14 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 @Service
@@ -277,6 +281,174 @@ public class SearchEngineService {
         });
         return jsonConfig;
     }
+
+    /**
+     * 多线程测试
+     * @return
+     */
+    public boolean IntoEngineByThreadPool() throws InterruptedException {
+
+        int batchSize = 5000;
+        TMInfo tmInfo = new TMInfo();
+        tmInfo.setPageCnt(batchSize);
+        int recordcount = tmService.selectMaxId();
+        int pageNum = recordcount / batchSize;
+        pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;
+        final BulkRequestBuilder[] bulkRequest = new BulkRequestBuilder[pageNum];
+        final CountDownLatch begin = new CountDownLatch(1);
+        final CountDownLatch end = new CountDownLatch(pageNum);
+//        final ExecutorService newFixThreadPool = Executors.newFixedThreadPool(10);
+        ExecutorService newFixThreadPool= Executors.newCachedThreadPool();
+        for (int i = 0; i < pageNum; i++) {
+            final int finalI = i;
+            tmInfo.setId(finalI * batchSize + 1);
+            List<TMInfo> tmInfos = tmService.selectByIDRange(tmInfo);
+            newFixThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        begin.await();
+                        LOGGER.info("全量更新开始处理：ID[{}]", finalI);
+                        try {
+                            bulkRequest[finalI] = transportClient.prepareBulk();
+                            JsonConfig jsonConfig = getJsonConfig();
+                            TMInfo _tminfo = null;
+                            for (int j = 0; j < tmInfos.size(); j++) {
+                                _tminfo = tmInfos.get(j);
+                                try {
+                                    //bulkRequest[0].add(transportClient.prepareIndex(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail()).setSource(JSONObject.fromObject(_tminfo, jsonConfig).toString())).execute().actionGet();
+                                    bulkRequest[finalI].add(transportClient.prepareIndex(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail()).setSource(JSONObject.fromObject(_tminfo, jsonConfig).toString()));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                       // BulkResponse bulkResponse = bulkRequest[finalI].get();
+                      /*  if (bulkResponse.hasFailures()) {
+                            LOGGER.error("全量更新处理出现错误，执行下一批次：ID[{}]", finalI);
+                        }*/
+                        bulkRequest[finalI].execute().actionGet();
+                        LOGGER.info("全量更新处理结束：ID[{}]", finalI);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        end.countDown();
+                    }
+
+                }
+            });
+        }
+        long startTime = System.currentTimeMillis();
+        System.out.println("开始时间：=====" + new Timestamp(System.currentTimeMillis()));
+        begin.countDown();
+        end.await();
+        System.out.println("结束时间：======" + new Timestamp(System.currentTimeMillis()));
+        long endTime = System.currentTimeMillis();
+//        System.out.println((endTime-startTime)/1000);
+        newFixThreadPool.shutdown();
+        LOGGER.info("耗费时间：TIME[{}]", endTime - startTime);
+        return true;
+    }
+
+    public boolean getBulkRequest() throws InterruptedException {
+        int batchSize = 5000;
+        TMInfo tmInfo = new TMInfo();
+        tmInfo.setPageCnt(batchSize);
+        int recordcount = tmService.selectMaxId();
+        int pageNum = recordcount / batchSize;
+        pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;
+        final BulkRequestBuilder[] bulkRequest = new BulkRequestBuilder[pageNum];
+        final CountDownLatch begin = new CountDownLatch(1);
+        final CountDownLatch end = new CountDownLatch(pageNum);
+        final ExecutorService newFixThreadPool = Executors.newFixedThreadPool(5);
+        for (int i = 0; i < pageNum; i++) {
+            final int finalI = i;
+            tmInfo.setId(i * batchSize + 1);
+            List<TMInfo> tmInfos = tmService.selectByIDRange(tmInfo);
+            newFixThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        begin.await();
+                        LOGGER.info("BulkRequest处理：ID[{}]",finalI);
+                        try {
+                            bulkRequest[finalI] = transportClient.prepareBulk();
+                            JsonConfig jsonConfig = getJsonConfig();
+                            TMInfo _tminfo = null;
+                            for (int j = 0; j < tmInfos.size(); j++) {
+                                _tminfo = tmInfos.get(j);
+                                try {
+                                    bulkRequest[finalI].add(transportClient.prepareIndex(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail()).setSource(JSONObject.fromObject(_tminfo, jsonConfig).toString()));
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        end.countDown();
+                    }
+                }
+            });
+        }
+        long startTime = System.currentTimeMillis();
+        System.out.println("开始时间：=====" + new Timestamp(System.currentTimeMillis()));
+        begin.countDown();
+        end.await();
+        System.out.println("结束时间：======" + new Timestamp(System.currentTimeMillis()));
+        long endTime = System.currentTimeMillis();
+//        System.out.println((endTime-startTime)/1000);
+        newFixThreadPool.shutdown();
+        LOGGER.info("耗费时间：TIME[{}]", endTime - startTime);
+        System.out.println(bulkRequest);
+        return true;
+    }
+    /**
+     * 多线程测试
+     * @return
+     */
+    public boolean IntoEngineByThreadPool_2() throws InterruptedException {
+
+
+     /*   System.out.println(bulkRequest);
+        for (int i = 0; i < pageNum; i++) {
+            final int finalI = i;
+            newFixThreadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        begin.await();
+                        LOGGER.info("全量更新开始处理：ID[{}]", finalI);
+                        bulkRequest[finalI].execute().actionGet();
+                        LOGGER.info("全量更新处理结束：ID[{}]", finalI);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } finally {
+                        end.countDown();
+                    }
+
+                }
+            });
+        }
+        long startTime = System.currentTimeMillis();
+        System.out.println("开始时间：=====" + new Timestamp(System.currentTimeMillis()));
+        begin.countDown();
+        end.await();
+        System.out.println("结束时间：======" + new Timestamp(System.currentTimeMillis()));
+        long endTime = System.currentTimeMillis();
+//        System.out.println((endTime-startTime)/1000);
+        newFixThreadPool.shutdown();
+        LOGGER.info("耗费时间：TIME[{}]", endTime - startTime);*/
+        return true;
+    }
+
+
 
 }
 

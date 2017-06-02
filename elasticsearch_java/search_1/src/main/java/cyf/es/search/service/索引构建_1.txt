@@ -1,47 +1,47 @@
-curl -XPUT http://localhost:9200/cyf_2
+curl -XPUT http://localhost:9200/cyf_3
 
 
-curl -XPOST http://localhost:9200/cyf_2/search_2/_mapping -d'
-{
-    "search_2": {
-        "properties": {
-            "pageCnt": {
-                "type": "long"
-            },
-            "tmClass": {
-                "type": "long"
-            },
-            "tmApplicant": {
-                "type":     "keyword",
-                "index":    "not_analyzed"
-            },
-            "totalCnt": {
-                "type": "long"
-            },
-            "rowStart": {
-                "type": "long"
-            },
-            "id": {
-                "type": "long"
-            },
-            "tmRegNbr": {
-                "type":     "keyword",
-                "index":    "not_analyzed"
-            },
-            "tmCn": {
-                "type":     "keyword",
-                "index":    "not_analyzed"
-            },
-              "tmEn": {
-                            "type":     "keyword",
-                            "index":    "not_analyzed"
-                        },
-            "tmdetail": {
-                "type": "text",
-                "analyzer": "ik_max_word",
-                "search_analyzer": "ik_max_word",
-                "include_in_all": "true",
-                "boost": 8
-            }
-    }  }
-}'
+curl -XPOST http://localhost:9200/cyf_3/search_3/_mapping -d'
+  {
+      "search_3": {
+          "properties": {
+              "pageCnt": {
+                  "type": "long"
+              },
+              "tmClass": {
+                  "type": "long"
+              },
+              "tmApplicant": {
+                  "type":     "keyword",
+                  "index":    "not_analyzed"
+              },
+              "totalCnt": {
+                  "type": "long"
+              },
+              "rowStart": {
+                  "type": "long"
+              },
+              "id": {
+                  "type": "long"
+              },
+              "tmRegNbr": {
+                  "type":     "keyword",
+                  "index":    "not_analyzed"
+              },
+              "tmCn": {
+                  "type":     "keyword",
+                  "index":    "not_analyzed"
+              },
+                "tmEn": {
+                              "type":     "keyword",
+                              "index":    "not_analyzed"
+                          },
+              "tmdetail": {
+                  "type": "text",
+                  "analyzer": "ik_max_word",
+                  "search_analyzer": "ik_max_word",
+                  "include_in_all": "true",
+                  "boost": 8
+              }
+      }  }
+  }'
