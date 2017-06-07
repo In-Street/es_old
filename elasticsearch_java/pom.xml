@@ -307,7 +307,10 @@
                 <sys.elasticsearch.index.type.search_1>search_4</sys.elasticsearch.index.type.search_1>
                 <sys.elasticsearch.index.type.field.tmCn>tmCn</sys.elasticsearch.index.type.field.tmCn>
 
-
+                <weixin.callback.appid>wx99c2381b15bbf68a</weixin.callback.appid>
+                <weixin.callback.appsecret>46f26a9b99d2c39a6a4ca383be9951ac</weixin.callback.appsecret>
+                <!--ES数据更新模板-->
+                <weixin.msg.templateid.OPENTM400180867>gFRpHlqz7s2HwSku3gSEWntKyPYxE4XmKUw2Xc8eyiU</weixin.msg.templateid.OPENTM400180867>
 
             </properties>
             <activation>
