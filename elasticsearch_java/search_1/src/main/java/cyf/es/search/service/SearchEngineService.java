@@ -369,7 +369,7 @@ public class SearchEngineService {
         int batchSize = 5000;
         TMInfo tmInfo = new TMInfo();
         tmInfo.setPageCnt(batchSize);
-        //当ID 不是顺序递增时 ，生成.json 文件会错乱
+        //当ID 不是顺序递增时 ，生成.json 文件会错乱（文件个数 及 包含的内容）
         int recordcount = tmService.selectMaxId();
         int pageNum = recordcount / batchSize;
         pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;
