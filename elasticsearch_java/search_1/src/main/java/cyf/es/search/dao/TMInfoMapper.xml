@@ -28,10 +28,17 @@
     t_tm_detail_3.tm_en as t_tm_detail_3_tm_en
   </sql>
 
+
   <select id="selectMaxId" resultType="java.lang.Integer">
     select max(id)
     from t_tm_detail_3 t_tm_detail_3
   </select>
+
+  <select id="selectCount" resultType="java.lang.Integer">
+    select count(1)
+    from t_tm_detail_3 t_tm_detail_3
+  </select>
+
 
   <select id="selectByIDRange" resultMap="BaseResultMap" parameterType="cyf.es.search.domain.TMInfo" >
     select

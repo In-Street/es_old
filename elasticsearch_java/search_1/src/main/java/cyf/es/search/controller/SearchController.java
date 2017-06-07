@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.List;
 
@@ -36,13 +36,15 @@ public class SearchController {
      *
      * @return
      */
-    @RequestMapping("/dataUpdate")
+    @RequestMapping(value="/dataUpdate", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=utf-8")
     @ResponseBody
-    public String dataUpdate() throws InterruptedException {
+    public String dataUpdate() throws InterruptedException, IOException {
 //        boolean result = searchEngineService.allTmApplicantNameIntoEngine();
-//        boolean result = searchEngineService.IntoEngineByThreadPool_2();
-        boolean result = searchEngineService.IntoEngineByThreadPool();
-       // boolean result = searchEngineService.getBulkRequest();
+      //  boolean result = searchEngineService.IntoEngineByThreadPool();
+
+
+        searchEngineService.getDate();
+        //searchEngineService.getSH("D:/Cheng/es_cyf_data");
         return "";
     }
 

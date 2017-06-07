@@ -1,6 +1,9 @@
 package cyf.es.util;
 
 
+import org.elasticsearch.env.Environment;
+import org.elasticsearch.search.DocValueFormat;
+import org.joda.time.DateTime;
 
 public class ESHelper {
 
@@ -23,7 +26,6 @@ public class ESHelper {
     public static String getTheTmCnFieldNameForTmdetail(){
         return PropertiesUtil.getPropertyValueByKeyAndLocation(SysConstans.SYS_CONFIG_PROPERTIES_LOCATION,"sys.elasticsearch.index.type.field.tmCn");
     }
-
 
 
 

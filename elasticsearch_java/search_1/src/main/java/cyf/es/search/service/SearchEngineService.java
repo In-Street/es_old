@@ -2,9 +2,11 @@ package cyf.es.search.service;
 
 import cyf.es.search.domain.TMInfo;
 import cyf.es.util.ESHelper;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.processors.JsonValueProcessor;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -36,7 +38,9 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.Timestamp;
@@ -79,7 +83,7 @@ public class SearchEngineService {
 
 
     /**
-     * 导入数据
+     * 导入数据 （ 速度太 low）
      *
      * @return
      */
@@ -146,7 +150,7 @@ public class SearchEngineService {
         mustQueryList.add(QueryBuilders.prefixQuery("tmCn", keyword));*/
 
         List<QueryBuilder> shouldQueryList = queryBuilder.should();
-        shouldQueryList.add(QueryBuilders.wildcardQuery("tmCn", "*"+keyword+"*"));
+        shouldQueryList.add(QueryBuilders.wildcardQuery("tmCn", "*" + keyword + "*"));
 
         String nodeName = transportClient.nodeName();
         LOGGER.debug("节点名[{}]", nodeName);
@@ -159,9 +163,9 @@ public class SearchEngineService {
         // .setFrom(tmInfo.getRowStart()).setSize(tmInfo.getPageCnt());
         SearchResponse searchResponse = searchRequestBuilder.get();
         SearchHits searchHits = searchResponse.getHits();
-        LOGGER.debug("DSL:[{}]",searchRequestBuilder.toString());
+        LOGGER.debug("DSL:[{}]", searchRequestBuilder.toString());
         long total = searchHits.totalHits();
-        LOGGER.debug("总数量：[{}]",total);
+        LOGGER.debug("总数量：[{}]", total);
         List<TMInfo> tmInfos = new ArrayList<>();
         for (SearchHit searchHit : searchHits) {
             System.out.println(searchHit.getSource());
@@ -172,7 +176,7 @@ public class SearchEngineService {
     }
 
 
-    public boolean delByTMId( BoolQueryBuilder boolQueryBuilder) {
+    public boolean delByTMId(BoolQueryBuilder boolQueryBuilder) {
         BulkIndexByScrollResponse response =
                 DeleteByQueryAction.INSTANCE.newRequestBuilder(transportClient)
                         .filter(boolQueryBuilder)
@@ -283,7 +287,8 @@ public class SearchEngineService {
     }
 
     /**
-     * 多线程测试
+     * 多线程测试（ 效果不理想，会有重复数据，为进行优化，不使用）
+     *
      * @return
      */
     public boolean IntoEngineByThreadPool() throws InterruptedException {
@@ -297,8 +302,8 @@ public class SearchEngineService {
         final BulkRequestBuilder[] bulkRequest = new BulkRequestBuilder[pageNum];
         final CountDownLatch begin = new CountDownLatch(1);
         final CountDownLatch end = new CountDownLatch(pageNum);
-//        final ExecutorService newFixThreadPool = Executors.newFixedThreadPool(10);
-        ExecutorService newFixThreadPool= Executors.newCachedThreadPool();
+        final ExecutorService newFixThreadPool = Executors.newFixedThreadPool(10);
+        //ExecutorService newFixThreadPool= Executors.newCachedThreadPool();
         for (int i = 0; i < pageNum; i++) {
             final int finalI = i;
             tmInfo.setId(finalI * batchSize + 1);
@@ -325,7 +330,7 @@ public class SearchEngineService {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                       // BulkResponse bulkResponse = bulkRequest[finalI].get();
+                        // BulkResponse bulkResponse = bulkRequest[finalI].get();
                       /*  if (bulkResponse.hasFailures()) {
                             LOGGER.error("全量更新处理出现错误，执行下一批次：ID[{}]", finalI);
                         }*/
@@ -352,103 +357,96 @@ public class SearchEngineService {
         return true;
     }
 
-    public boolean getBulkRequest() throws InterruptedException {
+    /**
+     * 通过生成 .json 文件 和 .sh ，在 服务器上手动执行 .sh （注意结尾 ; 的添加 ，不然执行错误）来完成数据导入，测试效果理想
+     *
+     * curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @1496806632345.json;
+     * curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @"/usr/local/elasticsearch/cyf_data/1496735737907.json";
+     *
+     * @throws IOException
+     */
+    public void getDate() throws IOException {
         int batchSize = 5000;
         TMInfo tmInfo = new TMInfo();
         tmInfo.setPageCnt(batchSize);
+        //当ID 不是顺序递增时 ，生成.json 文件会错乱
         int recordcount = tmService.selectMaxId();
         int pageNum = recordcount / batchSize;
         pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;
-        final BulkRequestBuilder[] bulkRequest = new BulkRequestBuilder[pageNum];
-        final CountDownLatch begin = new CountDownLatch(1);
-        final CountDownLatch end = new CountDownLatch(pageNum);
-        final ExecutorService newFixThreadPool = Executors.newFixedThreadPool(5);
+        StringBuilder sb = new StringBuilder();
+        long count = 0;
         for (int i = 0; i < pageNum; i++) {
-            final int finalI = i;
             tmInfo.setId(i * batchSize + 1);
             List<TMInfo> tmInfos = tmService.selectByIDRange(tmInfo);
-            newFixThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        begin.await();
-                        LOGGER.info("BulkRequest处理：ID[{}]",finalI);
-                        try {
-                            bulkRequest[finalI] = transportClient.prepareBulk();
-                            JsonConfig jsonConfig = getJsonConfig();
-                            TMInfo _tminfo = null;
-                            for (int j = 0; j < tmInfos.size(); j++) {
-                                _tminfo = tmInfos.get(j);
-                                try {
-                                    bulkRequest[finalI].add(transportClient.prepareIndex(ESHelper.getTheNameOfIndexForTmdetail(), ESHelper.getTheTypeForTmdetail()).setSource(JSONObject.fromObject(_tminfo, jsonConfig).toString()));
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+            count += tmInfos.size();
+            JsonConfig jsonConfig = getJsonConfig();
+            TMInfo _tminfo = null;
+            for (int j = 0; j < tmInfos.size(); j++) {
+                _tminfo = tmInfos.get(j);
+                sb.append("{\"index\" : { \"_index\" : \"cyf_4\", \"_type\" : \"search_4\"}}\\n").append("\r\n").append(JSONObject.fromObject(_tminfo, jsonConfig).toString()).append("\r\n");
+            }
+            if (count % 50000 == 0) {
+                getFile(sb);
+                //sb.delete(0, sb.length());
+                sb.setLength(0);
+            }
+            if (i == pageNum - 1 && count % 50000 != 0) {
+                getFile(sb);
+            }
 
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } finally {
-                        end.countDown();
-                    }
-                }
-            });
         }
-        long startTime = System.currentTimeMillis();
-        System.out.println("开始时间：=====" + new Timestamp(System.currentTimeMillis()));
-        begin.countDown();
-        end.await();
-        System.out.println("结束时间：======" + new Timestamp(System.currentTimeMillis()));
-        long endTime = System.currentTimeMillis();
-//        System.out.println((endTime-startTime)/1000);
-        newFixThreadPool.shutdown();
-        LOGGER.info("耗费时间：TIME[{}]", endTime - startTime);
-        System.out.println(bulkRequest);
-        return true;
-    }
-    /**
-     * 多线程测试
-     * @return
-     */
-    public boolean IntoEngineByThreadPool_2() throws InterruptedException {
-
-
-     /*   System.out.println(bulkRequest);
-        for (int i = 0; i < pageNum; i++) {
-            final int finalI = i;
-            newFixThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        begin.await();
-                        LOGGER.info("全量更新开始处理：ID[{}]", finalI);
-                        bulkRequest[finalI].execute().actionGet();
-                        LOGGER.info("全量更新处理结束：ID[{}]", finalI);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } finally {
-                        end.countDown();
-                    }
-
-                }
-            });
+        getSH("D:/Cheng/es_cyf_data");
+        if(CollectionUtils.isNotEmpty(shList)){
+            StringBuilder bf = new StringBuilder();
+            for (String s : shList) {
+                //@"/usr/local/elasticsearch/cyf_data/1496735737907.json"
+                bf.append("curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @").append(s+";").append("\r\n");
+            }
+            getSHFile(bf);
         }
-        long startTime = System.currentTimeMillis();
-        System.out.println("开始时间：=====" + new Timestamp(System.currentTimeMillis()));
-        begin.countDown();
-        end.await();
-        System.out.println("结束时间：======" + new Timestamp(System.currentTimeMillis()));
-        long endTime = System.currentTimeMillis();
-//        System.out.println((endTime-startTime)/1000);
-        newFixThreadPool.shutdown();
-        LOGGER.info("耗费时间：TIME[{}]", endTime - startTime);*/
-        return true;
+        // return sb.toString();
     }
 
 
+    public void getFile(StringBuilder sb) throws IOException {
+        File file = new File("D:/Cheng/es_cyf_data/" + System.currentTimeMillis() + ".json");
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        PrintWriter pw = new PrintWriter(file, "utf-8");
+        pw.print(sb.toString());
+        pw.flush();
+    }
+    public void getSHFile(StringBuilder sb) throws IOException {
+        File file = new File("D:/Cheng/es_cyf_sh/" + System.currentTimeMillis() + ".sh");
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        PrintWriter pw = new PrintWriter(file, "utf-8");
+        pw.print(sb.toString());
+        pw.flush();
+    }
+
+    List<String> shList = new ArrayList<>();
+    public void getSH(String path) {
+        File f = new File(path);
+        if (f.isDirectory()) {
+            File[] listFiles = f.listFiles();
+            if (null != listFiles && listFiles.length > 0) {
+                for (File c : listFiles) {
+                    if (c.isDirectory()) {
+                        getSH(c.getAbsolutePath());
+                    } else {
+                        System.out.println(c.getName());
+                        shList.add(c.getName());
+                    }
+                }
+            }
+        } else {
+            System.out.println(f.getName());
+            shList.add(f.getName());
+        }
+    }
 
 }
 

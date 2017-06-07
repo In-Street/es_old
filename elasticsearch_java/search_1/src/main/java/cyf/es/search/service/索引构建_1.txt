@@ -1,9 +1,9 @@
-curl -XPUT http://localhost:9200/cyf_3
+curl -XPUT http://localhost:9200/cyf_4
 
 
-curl -XPOST http://localhost:9200/cyf_3/search_3/_mapping -d'
+curl -XPOST http://localhost:9200/cyf_4/search_4/_mapping -d'
   {
-      "search_3": {
+      "search_4": {
           "properties": {
               "pageCnt": {
                   "type": "long"
