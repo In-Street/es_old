@@ -100,13 +100,9 @@ public class MessageController {
     @RequestMapping(value = "/getOpenid", method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
     public String getUserOpenId() {
-        String appId = "wx99c2381b15bbf68a";
-        String appSecret = "46f26a9b99d2c39a6a4ca383be9951ac";
-        /*AccessToken token = AccessTokenUtilO.getWeiXinAccessToken(appId, appSecret);
-         accessToken = token.getToken();*/
-
-        String accessToken = AccessTokenUtil.getAccessToken(appId, appSecret);
-
+        /*String appId = "wx99c2381b15bbf68a";
+        String appSecret = "46f26a9b99d2c39a6a4ca383be9951ac";*/
+        String accessToken = AccessTokenUtil.getAccessToken(WXConst.getAppID(), WXConst.getAppSecret());
         String result = null;
         String requestUrl = "https://api.weixin.qq.com/cgi-bin/user/get?access_token=ACCESS_TOKEN";
         requestUrl = requestUrl.replace("ACCESS_TOKEN", accessToken);
