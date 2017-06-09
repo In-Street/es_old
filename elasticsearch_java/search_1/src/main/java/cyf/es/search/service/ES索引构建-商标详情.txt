@@ -1,10 +1,27 @@
-curl -XPUT http://localhost:9200/cyf_4
+#重建索引，数据更新后需要手动刷新索引，否则无法查询数据
+curl -XPUT 'http://localhost:9200/cyf_4?pretty' -H 'Content-Type: application/json' -d'{
+    "settings": {
+    	"index":{
+	    	"number_of_replicas" : "0",
+	        "refresh_interval" : "-1",
+	    	"analysis": {
+	            "analyzer": {
+	                "tmdetail_analyzer": {
+	                    "type": "pattern",
+	                    "pattern": "\\s|;|；",
+	                    "lowercase": true
+	                }
+	            }
+	        }
+    	}
+    }
+}'
 
 
 curl -XPOST http://localhost:9200/cyf_4/search_4/_mapping -d'
-  {
-      "search_4": {
-          "properties": {
+{
+    "search_4": {
+        "properties": {
             "pageCnt": {
                 "type": "long"
             },
@@ -179,6 +196,6 @@ curl -XPOST http://localhost:9200/cyf_4/search_4/_mapping -d'
                 "type":     "keyword",
                 "index":    "not_analyzed"
             }
-          }
-      }
-  }'
+        }
+    }
+}'

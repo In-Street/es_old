@@ -359,7 +359,7 @@ public class SearchEngineService {
 
     /**
      * 通过生成 .json 文件 和 .sh ，在 服务器上手动执行 .sh （注意结尾 ; 的添加 ，不然执行错误）来完成数据导入，测试效果理想
-     *
+     * <p>
      * curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @1496806632345.json;
      * curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @"/usr/local/elasticsearch/cyf_data/1496735737907.json";
      *
@@ -369,10 +369,12 @@ public class SearchEngineService {
         int batchSize = 5000;
         TMInfo tmInfo = new TMInfo();
         tmInfo.setPageCnt(batchSize);
-        //当ID 不是顺序递增时 ，生成.json 文件会错乱（文件个数 及 包含的内容）
+
         int recordcount = tmService.selectMaxId();
-        int pageNum = recordcount / batchSize;
-        pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;
+        /*int pageNum = recordcount / batchSize;
+        pageNum = recordcount % batchSize == 0 ? pageNum : pageNum + 1;*/
+
+        int pageNum = 100;
         StringBuilder sb = new StringBuilder();
         long count = 0;
         for (int i = 0; i < pageNum; i++) {
@@ -385,22 +387,23 @@ public class SearchEngineService {
                 _tminfo = tmInfos.get(j);
                 sb.append("{\"index\" : { \"_index\" : \"cyf_4\", \"_type\" : \"search_4\"}}\\n").append("\r\n").append(JSONObject.fromObject(_tminfo, jsonConfig).toString()).append("\r\n");
             }
-            if (count % 50000 == 0) {
+            if (count >= 20000) {
                 getFile(sb);
                 //sb.delete(0, sb.length());
                 sb.setLength(0);
+                count = 0;
             }
-            if (i == pageNum - 1 && count % 50000 != 0) {
+            if (i == pageNum - 1) {
                 getFile(sb);
             }
 
         }
         getSH("D:/Cheng/es_cyf_data");
-        if(CollectionUtils.isNotEmpty(shList)){
+        if (CollectionUtils.isNotEmpty(shList)) {
             StringBuilder bf = new StringBuilder();
             for (String s : shList) {
                 //@"/usr/local/elasticsearch/cyf_data/1496735737907.json"
-                bf.append("curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @").append(s+";").append("\r\n");
+                bf.append("curl localhost:9200/cyf_4/search_4/_bulk?pretty --data-binary @").append(s + ";").append("\r\n");
             }
             getSHFile(bf);
         }
@@ -417,6 +420,7 @@ public class SearchEngineService {
         pw.print(sb.toString());
         pw.flush();
     }
+
     public void getSHFile(StringBuilder sb) throws IOException {
         File file = new File("D:/Cheng/es_cyf_sh/" + System.currentTimeMillis() + ".sh");
         if (!file.exists()) {
@@ -428,6 +432,7 @@ public class SearchEngineService {
     }
 
     List<String> shList = new ArrayList<>();
+
     public void getSH(String path) {
         File f = new File(path);
         if (f.isDirectory()) {
@@ -438,13 +443,18 @@ public class SearchEngineService {
                         getSH(c.getAbsolutePath());
                     } else {
                         System.out.println(c.getName());
-                        shList.add(c.getName());
+                        if (c.length() > 0) {
+
+                            shList.add(c.getName());
+                        }
                     }
                 }
             }
         } else {
             System.out.println(f.getName());
-            shList.add(f.getName());
+            if (f.length() > 0) {
+                shList.add(f.getName());
+            }
         }
     }
 
