@@ -10,6 +10,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>search_1</module>
+        <module>search_2</module>
     </modules>
     <properties>
         <spring.version>4.1.7.RELEASE</spring.version>
