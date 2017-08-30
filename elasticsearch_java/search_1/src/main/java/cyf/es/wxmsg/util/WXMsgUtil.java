@@ -210,6 +210,9 @@ public class WXMsgUtil {
 		}
 	}
 
+	/**
+	 * 修改 xstream 增加 头部描述
+	 */
 	private static XStream xstream = new XStream(new XppDriver() {
 		public HierarchicalStreamWriter createWriter(Writer out) {
 			return new PrettyPrintWriter(out) {
