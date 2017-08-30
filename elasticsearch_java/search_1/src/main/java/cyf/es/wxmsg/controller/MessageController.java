@@ -6,12 +6,23 @@ import cyf.es.wxmsg.util.*;
 import net.sf.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -96,6 +107,40 @@ public class MessageController {
         System.out.println(wxInterfaceReturn.toString());
     }
 
+    /**
+     * 服务器验证及消息互动接口
+     * @param request
+     * @param response
+     * @param locale
+     * @param signature
+     * @param timestamp
+     * @param nonce
+     * @param echostr
+     * @return
+     */
+    @RequestMapping(value = "/entry")
+    public ResponseEntity<String> entry(HttpServletRequest request, HttpServletResponse response, Locale locale
+            , @RequestParam(value="signature",required=true) String signature
+            , @RequestParam(value="timestamp",required=true) String timestamp
+            , @RequestParam(value="nonce",required=true) String nonce
+            , @RequestParam(value="echostr",required=false) String echostr) {
+        if(RequestMethod.GET.toString().equals(request.getMethod())){
+            logger.debug("验证服务器地址的有效性", locale);
+            String[] tempStr = new String[]{WXConst.getToken(),timestamp,nonce};
+            Arrays.sort(tempStr);
+            try {
+                if(!WXMsgUtil.SHA1(tempStr[0]+tempStr[1]+tempStr[2]).equals(signature)){
+                    logger.debug("服务器地址无效["+ NetWorkUtil.getIpAddress(request)+"]", locale);
+                };
+                return getResponseEntity(echostr, HttpStatus.OK);
+            } catch (IOException e) {
+                logger.debug("验证服务器地址的有效性出现错误",e);
+            }
+        }
+        return getResponseEntity(WXMsgUtil.getResponseMsgByRequest(request), HttpStatus.OK);
+    }
+
+
 
     @RequestMapping(value = "/getOpenid", method = {RequestMethod.GET, RequestMethod.POST})
     @ResponseBody
@@ -156,5 +201,12 @@ public class MessageController {
         return json;
     }
 
+    private static <T> ResponseEntity<T> getResponseEntity(T body, HttpStatus statusCode){
+        HttpHeaders headers = new HttpHeaders();
+        MediaType mediaType=new MediaType("text","html", Charset.forName("UTF-8"));
+        headers.setContentType(mediaType);
+        ResponseEntity<T> re = new ResponseEntity<T>(body,headers,statusCode);
+        return re;
+    }
 
 }

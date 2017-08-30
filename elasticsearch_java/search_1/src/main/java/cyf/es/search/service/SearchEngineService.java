@@ -88,6 +88,8 @@ public class SearchEngineService {
      * @return
      */
     public boolean allTmApplicantNameIntoEngine() {
+
+
         int batchSize = 5000;
         TMInfo tmInfo = new TMInfo();
         tmInfo.setPageCnt(batchSize);
@@ -307,7 +309,7 @@ public class SearchEngineService {
         for (int i = 0; i < pageNum; i++) {
             final int finalI = i;
             tmInfo.setId(finalI * batchSize + 1);
-            List<TMInfo> tmInfos = tmService.selectByIDRange(tmInfo);
+            final List<TMInfo> tmInfos = tmService.selectByIDRange(tmInfo);
             newFixThreadPool.execute(new Runnable() {
                 @Override
                 public void run() {

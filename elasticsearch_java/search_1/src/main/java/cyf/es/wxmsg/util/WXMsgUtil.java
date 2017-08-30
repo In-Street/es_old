@@ -73,7 +73,8 @@ public class WXMsgUtil {
 			
 		//图片消息
 		}else if("image".equals(msgType)){
-			
+//			sendMsg("你好！！！！！");
+			return "你好！！！！！";
 		//语音消息
 		}else if("voice".equals(msgType)){
 			
