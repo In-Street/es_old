@@ -27,7 +27,8 @@ import java.util.Map;
 
 
 @Controller
-@RequestMapping("/message")
+//@RequestMapping("/message")
+@RequestMapping("/test")
 @SuppressWarnings("rawtypes")
 public class MessageController {
 

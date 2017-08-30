@@ -1,5 +1,11 @@
 package cyf.es.wxmsg.util;
 
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.core.util.QuickWriter;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
+import com.thoughtworks.xstream.io.xml.PrettyPrintWriter;
+import com.thoughtworks.xstream.io.xml.XppDriver;
+import cyf.es.wxmsg.domain.TextMessage;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -15,10 +21,12 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,6 +37,9 @@ import java.util.Map;
  */
 public class WXMsgUtil {
 	private static Logger logger = LoggerFactory.getLogger(WXMsgUtil.class);
+	public static String PREFIX_CDATA = "<![CDATA[";
+	public static String SUFFIX_CDATA = "]]>";
+
 	/**
 	 * TODO:根据微信服务器发来的消息请求，返回不同的响应字符串，字符串符合微信接口中规定的”回复用户消息“格式
 	 * TODO:应该将不同事件的响应注册成Bean交由spring管理，各个时间动态调用bean完成响应
@@ -42,6 +53,13 @@ public class WXMsgUtil {
 		if(StringUtils.isEmpty(msgType)){
 			return null;
 		}
+		String respMessage = null;
+		// 发送方帐号（open_id）
+		String fromUserName = msg.get("FromUserName");
+		// 公众帐号
+		String toUserName = msg.get("ToUserName");
+
+
 		//事件消息
 		if("event".equals(msgType)){
 			String eventType = msg.get("Event");
@@ -73,8 +91,16 @@ public class WXMsgUtil {
 			
 		//图片消息
 		}else if("image".equals(msgType)){
-//			sendMsg("你好！！！！！");
-			return "你好！！！！！";
+			TextMessage text = new TextMessage();
+			text.setContent("什么图片");
+			text.setToUserName(fromUserName);
+			text.setFromUserName(toUserName);
+			text.setCreateTime(new Date().getTime() + "");
+			text.setMsgType("text");
+
+			respMessage = textMessageToXml(text);
+
+
 		//语音消息
 		}else if("voice".equals(msgType)){
 			
@@ -91,7 +117,7 @@ public class WXMsgUtil {
 		}else if("link".equals(msgType)){
 			
 		}
-		return null;
+		return respMessage;
 	}
 	
 	/**
@@ -183,5 +209,35 @@ public class WXMsgUtil {
 			return null;
 		}
 	}
+
+	private static XStream xstream = new XStream(new XppDriver() {
+		public HierarchicalStreamWriter createWriter(Writer out) {
+			return new PrettyPrintWriter(out) {
+				// 对所有xml节点的转换都增加CDATA标记
+				boolean cdata = true;
+				@SuppressWarnings("unchecked")
+				public void startNode(String name, Class clazz) {
+					super.startNode(name, clazz);
+				}
+				protected void writeText(QuickWriter writer, String text) {
+					if (cdata) {
+						writer.write(PREFIX_CDATA);
+						writer.write(text);
+						writer.write(SUFFIX_CDATA);
+					} else {
+						super.writeText(writer, text);
+					}
+				}
+			};
+		}
+	});
+
+	public static String textMessageToXml(TextMessage textMessage){
+		xstream.alias("xml", textMessage.getClass());
+		System.out.println(xstream.toXML(textMessage));
+		return xstream.toXML(textMessage);
+	}
+
+
 
 }
