@@ -26,9 +26,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 消息互动工具类
@@ -46,11 +44,11 @@ public class WXMsgUtil {
 	 * @param request
 	 * @return
 	 */
-	public static String getResponseMsgByRequest(HttpServletRequest request){
-		Map<String,String> msg = WXMsgUtil.transXMLMsg(request);
-		logger.debug("微信服务器推送消息："+msg.toString());
+	public static String getResponseMsgByRequest(HttpServletRequest request) {
+		Map<String, String> msg = WXMsgUtil.transXMLMsg(request);
+		logger.debug("微信服务器推送消息：" + msg.toString());
 		String msgType = msg.get("MsgType");
-		if(StringUtils.isEmpty(msgType)){
+		if (StringUtils.isEmpty(msgType)) {
 			return null;
 		}
 		String respMessage = null;
@@ -59,67 +57,94 @@ public class WXMsgUtil {
 		// 公众帐号
 		String toUserName = msg.get("ToUserName");
 
-
 		//事件消息
-		if("event".equals(msgType)){
+		if ("event".equals(msgType)) {
 			String eventType = msg.get("Event");
 			//单击事件
-			if("CLICK".equals(eventType)){
-			//订阅
-			}else if("subscribe".equals(eventType)){
+			if ("CLICK".equals(eventType)) {
+				//订阅
+			} else if ("subscribe".equals(eventType)) {
 				//扫描带参数二维码事件,如果用户还未关注公众号，则用户可以关注公众号，关注后微信会将带场景值关注事件推送给开发者。
-				if(msg.get("EventKey").startsWith("qrscene_")){
-				//普通订阅	
-				}else{
-					
+				if (msg.get("EventKey").startsWith("qrscene_")) {
+					//普通订阅
+				} else {
+
 				}
-			//取消订阅
-			}else if("unsubscribe".equals(eventType)){
-			//扫描带参数二维码事件
-			}else if("SCAN".equals(eventType)){
-			//上报地理位置事件
-			}else if("LOCATION".equals(eventType)){
-			//自定义菜单事件	
-			}else if("CLICK".equals(eventType)){
-				
-			//点击菜单跳转链接时的事件推送
-			}else if("VIEW".equals(eventType)){
-				
+				//取消订阅
+			} else if ("unsubscribe".equals(eventType)) {
+				//扫描带参数二维码事件
+			} else if ("SCAN".equals(eventType)) {
+				//上报地理位置事件
+			} else if ("LOCATION".equals(eventType)) {
+				//自定义菜单事件
+			} else if ("CLICK".equals(eventType)) {
+
+				//点击菜单跳转链接时的事件推送
+			} else if ("VIEW".equals(eventType)) {
+
 			}
-		//文本消息
-		}else if("text".equals(msgType)){
-			
-		//图片消息
-		}else if("image".equals(msgType)){
-			TextMessage text = new TextMessage();
-			text.setContent("什么图片");
+			//文本消息
+		} else if ("text".equals(msgType)) {
+          /*  TextMessage text = new TextMessage();
+            // TODO: 2017/8/31 回复内容修改
+            text.setContent("什么文本");
+
+            text.setToUserName(fromUserName);
+            text.setFromUserName(toUserName);
+            text.setCreateTime(new Date().getTime() + "");
+            text.setMsgType("text");
+
+            respMessage = textMessageToXml(text);*/
+			//图片消息
+		} else if ("image".equals(msgType)) {
+
+			NewMessage text = new NewMessage();
 			text.setToUserName(fromUserName);
 			text.setFromUserName(toUserName);
 			text.setCreateTime(new Date().getTime() + "");
-			text.setMsgType("text");
+			text.setMsgType("news");
 
-			respMessage = textMessageToXml(text);
+			List<Articles> list = new ArrayList<>();
 
+			Articles article = new Articles();
+			article.setPicUrl("http://daishumovie.oss-cn-shanghai.aliyuncs.com/img/1494299359654.jpg");
+			article.setDescription("北京卫视");
+			article.setUrl("http://www.baidu.com");
+			article.setTitle("图文1");
 
-		//语音消息
-		}else if("voice".equals(msgType)){
-			
-		//视频消息
-		}else if("video".equals(msgType)){
-			
-		//小视频消息
-		}else if("shortvideo".equals(msgType)){
-			
-		//地理位置消息
-		}else if("location".equals(msgType)){
-			
-		//链接消息
-		}else if("link".equals(msgType)){
-			
+			Articles article2 = new Articles();
+			article2.setPicUrl("http://daishumovie.oss-cn-shanghai.aliyuncs.com/img/1494068685393.jpg");
+			article2.setDescription("名义");
+			article2.setUrl("http://www.sina.com.cn/");
+			article2.setTitle("图文2");
+
+			list.add(article);
+			list.add(article2);
+
+			text.setArticles(list);
+			text.setArticleCount(list.size());
+			respMessage = newsToXml(text);
+
+			//语音消息
+		} else if ("voice".equals(msgType)) {
+
+			//视频消息
+		} else if ("video".equals(msgType)) {
+
+			//小视频消息
+		} else if ("shortvideo".equals(msgType)) {
+
+			//地理位置消息
+		} else if ("location".equals(msgType)) {
+
+			//链接消息
+		} else if ("link".equals(msgType)) {
+
 		}
 		return respMessage;
 	}
-	
+
+
 	/**
 	 * 将微信服务器推送的XML消息转换成Map<二级标签名，对应值>
 	 * @param request
@@ -235,10 +260,27 @@ public class WXMsgUtil {
 		}
 	});
 
-	public static String textMessageToXml(TextMessage textMessage){
+	/**
+	 *  文本 to xml
+	 * @param textMessage
+	 * @return
+	 */
+	public static String textMessageToXml(TextMessage textMessage) {
 		xstream.alias("xml", textMessage.getClass());
 		System.out.println(xstream.toXML(textMessage));
 		return xstream.toXML(textMessage);
+	}
+
+	/**
+	 * 图文 to xml
+	 * @param newsMessage
+	 * @return
+	 */
+	public static String newsToXml(NewMessage newsMessage) {
+		xstream.alias("xml", newsMessage.getClass());
+		xstream.alias("item", new Articles().getClass());
+		System.out.println(xstream.toXML(newsMessage));
+		return xstream.toXML(newsMessage);
 	}
 
 
